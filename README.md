@@ -16,7 +16,6 @@ Authentication Microservice with gRPC + JWT + MongoDB
 ```text
 project
 ├───cmd
-│   ├───client                          # for client testing
 │   └───server
 │           main.go                     # for run start server
 ├───config
@@ -29,9 +28,11 @@ project
 │   │           auth_handler.go
 │   │           user_handler.go
 │   ├───model                           # Data model
+│   │       login_attempt.go
 │   │       token.go
 │   │       user.go
 │   ├───repository                      # Handles database operations
+│   │       login_attempt_repository.go
 │   │       token_repository.go
 │   │       user_repository.go
 │   ├───server                          # starting server
