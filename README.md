@@ -84,8 +84,8 @@ go run cd cmd/server/main.go
 ### 3. ใส่ `url` ตาม port ที่ตั้งไว้ใน .env (Ex. localhost:50051)
 
 ### 4. ช่อง `select method` เลือก import a .proto file แล้วเลือกไฟล์นามสกุล .proto (โฟลเดอร์ proto) โดยจะมี 
-#### 4.1. auth.proto `(Register, Login, Logout)`
-#### 4.1. user.proto `(GetProfile, updateProfile, deleteProfile, ListUsers)`
+- auth.proto `(Register, Login, Logout)`
+- user.proto `(GetProfile, updateProfile, deleteProfile, ListUsers)`
 
 ### 5. import แล้ว select method จากไฟล์ที่นำเข้ามาได้ แล้วมาที่ `Message` กดที่ `Use Example Message` เพื่อกรอกข้อมูลตามที่เตรียมไว้
 
