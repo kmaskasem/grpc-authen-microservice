@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"log"
 	"net"
 
@@ -10,6 +11,9 @@ import (
 	"github.com/kmaskasem/grpc-authen-microservice/internal/repository"
 	"github.com/kmaskasem/grpc-authen-microservice/internal/service"
 	"github.com/kmaskasem/grpc-authen-microservice/utils"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	pb "github.com/kmaskasem/grpc-authen-microservice/proto"
 	"google.golang.org/grpc"
@@ -29,8 +33,14 @@ func StartGRPCServer() {
 	db := client.Database(cfg.MongoDB)
 	userRepo := repository.NewUserRepository(db)
 	tokenRepo := repository.NewTokenRepository(db)
+	loginAttemptRepo := repository.NewLoginAttemptRepository(db)
 
-	authService := service.NewAuthService(tokenRepo, userRepo)
+	loginAttemptRepo.Collection.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+		Keys:    bson.M{"timestamp": 1},
+		Options: options.Index().SetExpireAfterSeconds(60),
+	})
+
+	authService := service.NewAuthService(tokenRepo, userRepo, loginAttemptRepo)
 	userService := service.NewUserService(userRepo)
 
 	// Start listener

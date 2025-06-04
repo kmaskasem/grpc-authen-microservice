@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/kmaskasem/grpc-authen-microservice/internal/model"
@@ -57,9 +56,6 @@ func (r *UserRepository) ListUsers(ctx context.Context, filter bson.M, page, lim
 
 func (r *UserRepository) FindByID(ctx context.Context, id primitive.ObjectID) (*model.User, error) {
 	var user model.User
-	fmt.Println("Finding ID:", id)
-	fmt.Println("Finding ID:", id.Hex())
-	fmt.Println("Using collection:", r.Collection.Name())
 
 	err := r.Collection.FindOne(ctx, bson.M{"_id": id, "deleted": false}).Decode(&user)
 	if err != nil {

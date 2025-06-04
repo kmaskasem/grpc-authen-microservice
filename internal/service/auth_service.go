@@ -16,15 +16,17 @@ import (
 )
 
 type AuthService struct {
-	TokenRepo *repository.TokenRepository
-	UserRepo  *repository.UserRepository
+	TokenRepo        *repository.TokenRepository
+	UserRepo         *repository.UserRepository
+	LoginAttemptRepo *repository.LoginAttemptRepository
 }
 
 // Constructer AuthService
-func NewAuthService(tokenRepo *repository.TokenRepository, userRepo *repository.UserRepository) *AuthService {
+func NewAuthService(tokenRepo *repository.TokenRepository, userRepo *repository.UserRepository, loginAttemptRepo *repository.LoginAttemptRepository) *AuthService {
 	return &AuthService{
-		TokenRepo: tokenRepo,
-		UserRepo:  userRepo,
+		TokenRepo:        tokenRepo,
+		UserRepo:         userRepo,
+		LoginAttemptRepo: loginAttemptRepo,
 	}
 }
 
@@ -62,14 +64,19 @@ func (s *AuthService) Register(ctx context.Context, user *model.User) error {
 }
 
 func (s *AuthService) Login(ctx context.Context, email string, password string) (string, error) {
+	count, _ := s.LoginAttemptRepo.CountRecentAttempts(ctx, email)
+	if count >= 5 {
+		return "", status.Error(codes.ResourceExhausted, "Too many login attempts. Try again later.")
+	}
+	_ = s.LoginAttemptRepo.AddAttempt(ctx, email)
 	user, err := s.UserRepo.FindByEmail(ctx, email)
 	if err != nil {
-		return "", errors.New("email is not correct")
+		return "", errors.New("email not found")
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return "", errors.New("password is not correct")
+		return "", errors.New("incorrect password")
 	}
 
 	token, err := utils.GenerateJWT(user.ID.Hex())
