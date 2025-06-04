@@ -59,17 +59,17 @@ project
 │   README.md
 ```
 ## Run Project
-### 1. Create .env and Setting (Example)
+### 1. Clone Project และติดตั้ง Dependency 
+```bash
+go mod tidy
+```
+
+### 2. Create .env and Setting (Example)
 ```env
 MONGO_URI=mongodb://localhost:27017
 MONGO_DB=auth_db
 GRPC_PORT=:50051
 JWT_SECRET=your-super-secret
-```
-
-### 2. Install Dependency 
-```bash
-go mod tidy
 ```
 
 ### 3. Run the gRPC Server
