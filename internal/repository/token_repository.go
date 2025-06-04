@@ -12,7 +12,7 @@ type TokenRepository struct {
 	Collection *mongo.Collection
 }
 
-// Constructor UserRepository
+// Constructor TokenRepository
 func NewTokenRepository(db *mongo.Database) *TokenRepository {
 	return &TokenRepository{
 		Collection: db.Collection("token"),
@@ -29,4 +29,9 @@ func (r *TokenRepository) BlacklistToken(ctx context.Context, token string, expi
 	}
 
 	return err
+}
+
+func (r *TokenRepository) IsBlacklisted(ctx context.Context, token string) (bool, error) {
+	count, err := r.Collection.CountDocuments(ctx, bson.M{"token": token})
+	return count > 0, err
 }

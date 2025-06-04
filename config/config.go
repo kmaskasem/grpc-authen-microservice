@@ -11,6 +11,7 @@ type Config struct {
 	MongoURI  string
 	MongoDB   string
 	JWTSecret string
+	GRPCPort  string
 }
 
 func LoadConfig() *Config {
@@ -23,5 +24,6 @@ func LoadConfig() *Config {
 		MongoURI:  os.Getenv("MONGO_URI"),
 		MongoDB:   os.Getenv("MONGO_DB"),
 		JWTSecret: os.Getenv("JWT_SECRET"),
+		GRPCPort:  os.Getenv("GRPC_PORT"),
 	}
 }

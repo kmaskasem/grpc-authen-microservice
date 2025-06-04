@@ -1,30 +1,70 @@
 package service
 
 import (
+	"context"
+
+	"github.com/kmaskasem/grpc-authen-microservice/internal/model"
 	"github.com/kmaskasem/grpc-authen-microservice/internal/repository"
+	"github.com/kmaskasem/grpc-authen-microservice/utils"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type UserService struct {
-	// TokenRepo *repository.TokenRepository
-	UserRepo *repository.UserRepository
+	Repo *repository.UserRepository
 }
 
-func NewUserService(tokenRepo *repository.TokenRepository, userRepo *repository.UserRepository) *UserService {
+func NewUserService(userRepo *repository.UserRepository) *UserService {
 	return &UserService{
-		// TokenRepo: tokenRepo,
-		UserRepo: userRepo,
+		Repo: userRepo,
 	}
 }
 
-// func (s *AuthService) ListUsers(ctx context.Context, token string) error {
+func (s *UserService) ListUsers(ctx context.Context, name, email string, page, limit int64) ([]*model.User, error) {
+	filter := bson.M{"deleted": false}
+	if name != "" {
+		filter["name"] = bson.M{"$regex": name, "$options": "i"}
+	}
+	if email != "" {
+		filter["email"] = bson.M{"$regex": email, "$options": "i"}
+	}
+	return s.Repo.ListUsers(ctx, filter, page, limit)
+}
 
-// }
+func (s *UserService) GetProfile(ctx context.Context, id string) (*model.User, error) {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+	return s.Repo.FindByID(ctx, objID)
+}
 
-// func (s *UserService) GetProfile(ctx context.Context, user *model.User) error {
-// }
+func (s *UserService) UpdateProfile(ctx context.Context, id, name, email string) error {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
 
-// func (s *AuthService) UpdateProfile(ctx context.Context, email string, password string) (string, error) {
-// }
+	// Validate Email format
+	if !utils.ValidateEmail(email) {
+		return status.Error(codes.InvalidArgument, "invalid email format")
+	}
 
-// func (s *AuthService) DeleteProfile(ctx context.Context, token string) error {
-// }
+	// Check if email is used by another user
+	existingUser, _ := s.Repo.FindByEmail(ctx, email)
+	if existingUser != nil && existingUser.ID != objID {
+		return status.Error(codes.AlreadyExists, "email already in use by another user")
+	}
+
+	return s.Repo.UpdateUser(ctx, objID, bson.M{"name": name, "email": email})
+}
+
+func (s *UserService) DeleteProfile(ctx context.Context, id string) error {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	return s.Repo.SoftDeleteUser(ctx, objID)
+}

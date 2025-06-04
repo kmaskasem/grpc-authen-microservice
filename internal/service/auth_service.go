@@ -8,6 +8,8 @@ import (
 	"github.com/kmaskasem/grpc-authen-microservice/internal/model"
 	"github.com/kmaskasem/grpc-authen-microservice/internal/repository"
 	"github.com/kmaskasem/grpc-authen-microservice/utils"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -18,6 +20,7 @@ type AuthService struct {
 	UserRepo  *repository.UserRepository
 }
 
+// Constructer AuthService
 func NewAuthService(tokenRepo *repository.TokenRepository, userRepo *repository.UserRepository) *AuthService {
 	return &AuthService{
 		TokenRepo: tokenRepo,
@@ -26,20 +29,29 @@ func NewAuthService(tokenRepo *repository.TokenRepository, userRepo *repository.
 }
 
 func (s *AuthService) Register(ctx context.Context, user *model.User) error {
+	// Validate Email format
+	if !utils.ValidateEmail(user.Email) {
+		return status.Error(codes.InvalidArgument, "invalid email format")
+	}
+
+	// Validate is Email used
 	existingUser, _ := s.UserRepo.FindByEmail(ctx, user.Email)
 	if existingUser != nil {
 		return errors.New("email already exists")
 	}
 
-	if len(user.Password) < 6 {
-		return errors.New("password must be at least 6 characters")
+	// Validate Password strength
+	if err := utils.ValidatePassword(user.Password); err != nil {
+		return err
 	}
 
-	hashPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	// Hash Password
+	hashPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
 		return err
 	}
-	user.Password = string(hashPassword)
+	user.Password = hashPassword
+	user.Deleted = false
 
 	err = s.UserRepo.CreateUser(ctx, user)
 	if err != nil {
@@ -68,7 +80,9 @@ func (s *AuthService) Login(ctx context.Context, email string, password string) 
 	return token, nil
 }
 
-func (s *AuthService) Logout(ctx context.Context, token string) error {
+func (s *AuthService) Logout(ctx context.Context) error {
+	token := ctx.Value("token").(string)
+
 	//Check token with signature
 	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		return utils.GetJWTSecret(), nil

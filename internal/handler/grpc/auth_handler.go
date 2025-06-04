@@ -39,7 +39,7 @@ func (s *AuthHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 
 // Logout Handler
 func (s *AuthHandler) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {
-	err := s.AuthService.Logout(ctx, req.Token)
+	err := s.AuthService.Logout(ctx)
 	if err != nil {
 		return nil, err
 	}

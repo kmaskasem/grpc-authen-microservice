@@ -3,56 +3,76 @@ package grpchandler
 import (
 	"context"
 
-	"github.com/kmaskasem/grpc-authen-microservice/internal/model"
 	"github.com/kmaskasem/grpc-authen-microservice/internal/service"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	pb "github.com/kmaskasem/grpc-authen-microservice/proto"
 )
 
 type UserHandler struct {
-	pb.UnimplementedAuthServiceServer
-	AuthService *service.AuthService
+	pb.UnimplementedUserServiceServer
+	UserService *service.UserService
 }
 
-// ListUsers Handler
-func (s *UserHandler) ListUsers(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	err := s.AuthService.Register(ctx, &model.User{
-		Email:    req.Email,
-		Password: req.Password,
-		Name:     req.Name,
-	})
+func (h *UserHandler) ListUsers(ctx context.Context, req *pb.ListUsersRequest) (*pb.ListUsersResponse, error) {
+
+	users, err := h.UserService.ListUsers(ctx, req.Name, req.Email, int64(req.Page), int64(req.Limit))
 	if err != nil {
 		return nil, err
 	}
-	return &pb.RegisterResponse{Message: "registered"}, nil
+	var result []*pb.User
+	for _, u := range users {
+		result = append(result, &pb.User{
+			Id:    u.ID.Hex(),
+			Name:  u.Name,
+			Email: u.Email,
+		})
+	}
+	return &pb.ListUsersResponse{Users: result}, nil
 }
 
-// Login Handler
-func (s *AuthHandler) GetProfile(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
-	token, err := s.AuthService.Login(ctx, req.Email, req.Password)
+func (h *UserHandler) GetProfile(ctx context.Context, req *pb.GetProfileRequest) (*pb.GetProfileResponse, error) {
+	userId, ok := ctx.Value("userId").(string)
+	if !ok || userId == "" {
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
+	}
+
+	user, err := h.UserService.GetProfile(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
-
-	return &pb.LoginResponse{Token: token}, nil
+	return &pb.GetProfileResponse{
+		User: &pb.User{
+			Id:    user.ID.Hex(),
+			Name:  user.Name,
+			Email: user.Email,
+		},
+	}, nil
 }
 
-// Logout Handler
-func (s *AuthHandler) UpdateProfile(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {
-	err := s.AuthService.Logout(ctx, req.Token)
+func (h *UserHandler) UpdateProfile(ctx context.Context, req *pb.UpdateProfileRequest) (*pb.UpdateProfileResponse, error) {
+	userId, ok := ctx.Value("userId").(string)
+	if !ok || userId == "" {
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
+	}
+
+	err := h.UserService.UpdateProfile(ctx, userId, req.Name, req.Email)
 	if err != nil {
 		return nil, err
 	}
-
-	return &pb.LogoutResponse{Message: "log out"}, nil
+	return &pb.UpdateProfileResponse{Message: "updated"}, nil
 }
 
-// Logout Handler
-func (s *AuthHandler) DeleteProfile(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {
-	err := s.AuthService.Logout(ctx, req.Token)
+func (h *UserHandler) DeleteProfile(ctx context.Context, req *pb.DeleteProfileRequest) (*pb.DeleteProfileResponse, error) {
+	userId, ok := ctx.Value("userId").(string)
+	if !ok || userId == "" {
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
+	}
+
+	err := h.UserService.DeleteProfile(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
-
-	return &pb.LogoutResponse{Message: "log out"}, nil
+	return &pb.DeleteProfileResponse{Message: "deleted"}, nil
 }

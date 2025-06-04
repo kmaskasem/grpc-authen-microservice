@@ -27,9 +27,7 @@ message LoginResponse{
     string token = 1;
 }
 
-message LogoutRequest{
-    string token = 1;
-}
+message LogoutRequest{}
 
 message LogoutResponse{
     string message = 1;
