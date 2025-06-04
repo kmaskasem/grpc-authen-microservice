@@ -58,7 +58,11 @@ func (s *UserService) UpdateProfile(ctx context.Context, id, name, email string)
 		return status.Error(codes.AlreadyExists, "email already in use by another user")
 	}
 
-	return s.Repo.UpdateUser(ctx, objID, bson.M{"name": name, "email": email})
+	update := bson.M{
+		"name":  name,
+		"email": email,
+	}
+	return s.Repo.UpdateUser(ctx, objID, update)
 }
 
 func (s *UserService) DeleteProfile(ctx context.Context, id string) error {
